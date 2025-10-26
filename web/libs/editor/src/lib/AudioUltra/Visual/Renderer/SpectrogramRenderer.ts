@@ -339,13 +339,14 @@ export class SpectrogramRenderer implements Renderer<SpectrogramRendererConfig> 
     }
     // Downsample for a linear scale
     const scale = this.spectrogramScale;
+    const nyquist = (this.audio?.sampleRate ?? 768000) / 2;
     let displayData = fftData;
     if (scale === "linear") {
       const bins = Math.min(MAX_LINEAR_DISPLAY_BINS, fftData.length);
       displayData = downsampleLinear(fftData, bins);
     } else if (scale === "log") {
       const bins = Math.min(MAX_LOG_DISPLAY_BINS, fftData.length);
-      displayData = downsampleLog(fftData, bins);
+      displayData = downsampleLog(fftData, bins, nyquist);
     } else if (scale === "mel") {
       const bins = Math.min(MAX_MEL_DISPLAY_BINS, fftData.length);
       displayData = downsampleMel(fftData, bins);
@@ -371,6 +372,27 @@ export class SpectrogramRenderer implements Renderer<SpectrogramRendererConfig> 
           const logNext = Math.log(i + 2);
           yBottom = zero + channelHeight * (1 - logCurrent / logTotal);
           yTop = zero + channelHeight * (1 - logNext / logTotal);
+          binHeight = yBottom - yTop;
+          break;
+        }
+        case "mel": {
+          // Assume the frequency range spans 0 Hz to some max frequency (e.g., Nyquist)
+          const melMax = 2595 * Math.log10(1 + nyquist / 700);
+      
+          // Convert bin indices to mel frequencies, then back to Hz for positioning
+          const melCurrent = (i / binCount) * melMax;
+          const melNext = ((i + 1) / binCount) * melMax;
+      
+          const freqCurrent = 700 * (Math.pow(10, melCurrent / 2595) - 1);
+          const freqNext = 700 * (Math.pow(10, melNext / 2595) - 1);
+      
+          // Normalize positions by the mel scale, similar to how log does it
+          const melTotal = melMax;
+          const melBottom = melCurrent / melTotal;
+          const melTop = melNext / melTotal;
+      
+          yBottom = zero + channelHeight * (1 - melBottom);
+          yTop = zero + channelHeight * (1 - melTop);
           binHeight = yBottom - yTop;
           break;
         }

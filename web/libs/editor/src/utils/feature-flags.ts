@@ -215,6 +215,7 @@ export function isFF(id: string) {
   // TODO: remove the override + if statement once LSE and LSO start building react the same way and fflag_fix_front_lsdv_4620_memory_leaks_100723_short is removed
   const override: Record<string, boolean> = {
     fflag_fix_front_lsdv_4620_memory_leaks_100723_short: false,
+    fflag_feat_optic_2123_audio_spectrograms: true,
   };
 
   if (id in override) {

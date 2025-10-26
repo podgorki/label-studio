@@ -86,9 +86,9 @@ const isSyncedBuffering = ff.isActive(ff.FF_SYNCED_BUFFERING);
  * @param {string} [defaultvolume=1] - Default volume level (from 0 to 1).
  * @param {string} [hotkey] - Hotkey used to play or pause audio.
  * @param {string} [sync] Object name to sync with.
- * @param {string} [height=96] - Total height of the audio player.
+ * @param {string} [height=512] - Total height of the audio player.
  * @param {string} [waveheight=32] - Minimum height of a waveform when in `splitchannels` mode with multiple channels to display.
- * @param {boolean} [spectrogram=false] - Determines whether an audio spectrogram is automatically displayed upon loading.
+ * @param {boolean} [spectrogram=true] - Determines whether an audio spectrogram is automatically displayed upon loading.
  * @param {boolean} [splitchannels=false] - Display multiple audio channels separately, if the audio file has more than one channel. (**NOTE: Requires more memory to operate.**)
  * @param {string} [decoder=webaudio] - Decoder type to use to decode audio data. (`"webaudio"` or `"ffmpeg"`)
  * @param {string} [player=html5] - Player type to use to play audio data. (`"html5"` or `"webaudio"`)
@@ -106,7 +106,7 @@ const TagAttrs = types.model({
   hotkey: types.maybeNull(types.string),
   showlabels: types.optional(types.boolean, false),
   showscores: types.optional(types.boolean, false),
-  height: types.optional(types.string, "96"),
+  height: types.optional(types.string, "512"),
   waveheight: types.optional(types.string, "32"),
   cursorwidth: types.optional(types.string, "2"),
   cursorcolor: types.optional(customTypes.color, "#333"),
@@ -116,7 +116,7 @@ const TagAttrs = types.model({
   splitchannels: types.optional(types.boolean, false),
   decoder: types.optional(types.enumeration(["ffmpeg", "webaudio"]), "webaudio"),
   player: types.optional(types.enumeration(["html5", "webaudio"]), "html5"),
-  spectrogram: types.optional(types.boolean, false),
+  spectrogram: types.optional(types.boolean, true),
 });
 
 export const AudioModel = types.compose(

@@ -3,7 +3,7 @@ import type { ColorScheme } from "./ColorMapper";
 
 export const SPECTROGRAM_DEFAULTS = {
   FFT_SAMPLES: 512,
-  MEL_BANDS: 64,
+  MEL_BANDS: 128,
   WINDOWING_FUNCTION: "blackman" as WindowFunctionType,
   COLOR_SCHEME: "viridis" as ColorScheme,
   MIN_DB: -80,
@@ -30,7 +30,7 @@ export const RATE_LIMITED_RENDER_FPS = 60;
 
 // Pre-cache spectrogram data for the current window size
 export const PRECACHE = true;
-export const SPECTROGRAM_FEATURE_ENABLED = false;
+export const SPECTROGRAM_FEATURE_ENABLED = true;
 
 // UI Constants
 export const MIN_RECT_HEIGHT = 1;
@@ -38,9 +38,9 @@ export const DEFAULT_MODAL_MARGIN = 10;
 
 // Maximum number of bins to display for linear scale spectrograms.
 // This limits the number of rectangles drawn per column for performance and visual clarity.
-export const MAX_LINEAR_DISPLAY_BINS = 128;
-export const MAX_LOG_DISPLAY_BINS = 128;
-export const MAX_MEL_DISPLAY_BINS = 140;
+export const MAX_LINEAR_DISPLAY_BINS = 512;
+export const MAX_LOG_DISPLAY_BINS = 512;
+export const MAX_MEL_DISPLAY_BINS = 512;
 
 // Fraction of bins (from low to high) to use average pooling in hybrid linear downsampling.
 // The remainder (high bins) will use max pooling. 0.5 = 50% average, 50% max.

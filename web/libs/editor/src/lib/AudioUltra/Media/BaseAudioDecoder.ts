@@ -5,7 +5,7 @@ interface AudioDecoderEvents {
   progress: (chunk: number, total: number) => void;
 }
 
-export const DEFAULT_FREQUENCY_HZ = 44100;
+export const DEFAULT_FREQUENCY_HZ = 768000;
 
 export abstract class BaseAudioDecoder extends Events<AudioDecoderEvents> {
   chunks?: Float32Array[][];

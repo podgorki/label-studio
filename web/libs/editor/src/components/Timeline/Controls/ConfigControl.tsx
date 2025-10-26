@@ -49,7 +49,7 @@ export const ConfigControl: FC<ConfigControlProps> = ({
   const playbackSpeed = speed ?? 1;
   const [isTimeline, setTimeline] = useState(true);
   const [isAudioWave, setAudioWave] = useState(true);
-  const [isSpectrogram, setSpectrogram] = useState(false);
+  const [isSpectrogram, setSpectrogram] = useState(true);
 
   // Refs for positioning
   const modalRef = useRef<HTMLDivElement>(null);
@@ -123,7 +123,7 @@ export const ConfigControl: FC<ConfigControlProps> = ({
       const defaultDisplay = true;
       setTimeline(layerVisibility?.get?.("timeline") ?? defaultDisplay);
       setAudioWave(layerVisibility?.get?.("waveform") ?? defaultDisplay);
-      setSpectrogram(layerVisibility?.get?.("spectrogram") ?? false);
+      setSpectrogram(layerVisibility?.get?.("spectrogram") ?? true);
     }
   }, [layerVisibility]);
 

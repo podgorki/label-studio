@@ -132,18 +132,10 @@ export class GridRendererPlugin implements RendererPlugin<GridRendererPluginConf
     let gridFreqs: number[] = [];
     const nyquist = sampleRate / 2;
     if (scale === "linear") {
-      const approxStep = nyquist / 10;
-      let step: number;
-      if (approxStep > 2000) step = 2000;
-      else if (approxStep > 1000) step = 1000;
-      else if (approxStep > 500) step = 500;
-      else if (approxStep > 100) step = 100;
-      else step = 50;
-      for (let f = 0; f <= nyquist; f += step) gridFreqs.push(f);
-      if (gridFreqs[gridFreqs.length - 1] !== nyquist) gridFreqs.push(nyquist);
+      gridFreqs = makeLinearGrid(nyquist, 10);
     } else if (scale === "log") {
-      const decades = Math.floor(Math.log10(nyquist)) - 1;
-      for (let d = 1; d <= decades; d++) {
+      const maxDecade = Math.ceil(Math.log10(nyquist));
+      for (let d = 1; d <= maxDecade; d++) {
         for (const m of [1, 2, 5]) {
           const f = m * 10 ** d;
           if (f > nyquist) break;
@@ -153,9 +145,15 @@ export class GridRendererPlugin implements RendererPlugin<GridRendererPluginConf
       if (gridFreqs[0] !== 0) gridFreqs.unshift(0);
       if (gridFreqs[gridFreqs.length - 1] !== nyquist) gridFreqs.push(nyquist);
     } else if (scale === "mel") {
-      const melGridPoints = [0, 500, 1000, 2000, 4000, 8000, 12000, 16000];
+      const nyquist = sampleRate / 2;
+      const numPoints = 10; // number of grid points
+      const melGridPoints = Array.from({ length: numPoints }, (_, i) => {
+        const ratio = i / (numPoints - 1);
+        // logarithmic spacing from 1 Hz to Nyquist
+        return 1 * Math.pow(nyquist / 1, ratio);
+      });
+
       const specificMelFreqs = melGridPoints.filter((f) => f <= nyquist);
-      // Ensure 0Hz is present for Mel scale if not already by melGridPoints filter for f <= nyquist
       if (!specificMelFreqs.includes(0)) {
         specificMelFreqs.unshift(0);
       }
@@ -262,4 +260,36 @@ export class GridRendererPlugin implements RendererPlugin<GridRendererPluginConf
     // For example, you might want to recalculate cached layout or mark for redraw
     this.requestGridRedraw();
   }
+}
+
+// 👇 Add these helper functions anywhere above or below the class
+function chooseNiceStep(rawStep: number): number {
+  if (rawStep <= 0) return 1;
+  const pow = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const candidates = [1, 2, 5, 10];
+  for (const c of candidates) {
+    const candidate = c * pow;
+    if (candidate >= rawStep) return candidate;
+  }
+  return 10 * pow;
+}
+
+function makeLinearGrid(nyquist: number, targetTicks = 10): number[] {
+  const gridFreqs: number[] = [];
+  if (nyquist <= 0) return [0];
+  const rawStep = nyquist / Math.max(1, targetTicks);
+  let step = chooseNiceStep(rawStep);
+
+  const maxTicks = Math.ceil(targetTicks * 1.5);
+  if (Math.ceil(nyquist / step) > maxTicks) {
+    step = chooseNiceStep(step * 1.1);
+  }
+
+  for (let f = 0; f <= nyquist + 1e-9; f += step) {
+    gridFreqs.push(Math.round(f));
+  }
+  const last = gridFreqs[gridFreqs.length - 1];
+  const roundedNyq = Math.round(nyquist);
+  if (last !== roundedNyq) gridFreqs.push(roundedNyq);
+  return gridFreqs;
 }

@@ -96,11 +96,8 @@ export class WebAudioDecoder extends BaseAudioDecoder {
   }
 
   private createOfflineAudioContext(sampleRate?: number) {
-    if (!(window as any).WebAudioOfflineAudioContext) {
-      (window as any).WebAudioOfflineAudioContext = new (
-        window.OfflineAudioContext || (window as any).webkitOfflineAudioContext
-      )(1, 2, sampleRate ?? this.sampleRate);
-    }
-    return (window as any).WebAudioOfflineAudioContext;
+    return new (
+      window.OfflineAudioContext || (window as any).webkitOfflineAudioContext
+    )(1, 128, sampleRate ?? 768000);
   }
 }

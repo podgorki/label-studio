@@ -35,20 +35,25 @@ export function downsampleLinear(fftData: Float32Array, bins: number): Float32Ar
  * Downsample FFT data for log scale by hybrid pooling (average for low bins, max for high bins)
  * @param fftData
  * @param bins
+ * @param nyquistFreq - The Nyquist frequency (sampleRate / 2)
  */
-export function downsampleLog(fftData: Float32Array, bins: number): Float32Array {
+export function downsampleLog(fftData: Float32Array, bins: number, nyquistFreq: number = 384000): Float32Array {
   const binCount = fftData.length;
   if (bins >= binCount) return fftData;
   const result = new Float32Array(bins);
-  const logMin = Math.log(1);
-  const logMax = Math.log(binCount + 1);
+  const minFreq = 10;
+  const logMin = Math.log10(minFreq);
+  const logMax = Math.log10(nyquistFreq);
 
   for (let i = 0; i < bins; i++) {
-    let startF = Math.floor(Math.exp(logMin + (logMax - logMin) * (i / bins)) - 1);
-    let endF = Math.floor(Math.exp(logMin + (logMax - logMin) * ((i + 1) / bins)) - 1);
-    // Clamp to valid range
-    startF = Math.max(0, startF);
-    endF = Math.max(startF + 1, endF); // Ensure at least one bin
+    const logStart = logMin + (logMax - logMin) * (i / bins);
+    const logEnd = logMin + (logMax - logMin) * ((i + 1) / bins);
+    const freqStart = Math.pow(10, logStart);
+    const freqEnd = Math.pow(10, logEnd);
+    let startF = Math.floor((freqStart / nyquistFreq) * binCount);
+    let endF = Math.floor((freqEnd / nyquistFreq) * binCount);
+    startF = Math.max(0, Math.min(binCount - 1, startF));
+    endF = Math.max(startF + 1, Math.min(binCount, endF));
     let sum = 0;
     let max = Number.NEGATIVE_INFINITY;
     let count = 0;
@@ -58,7 +63,6 @@ export function downsampleLog(fftData: Float32Array, bins: number): Float32Array
       count++;
     }
     if (count === 0) {
-      // For the first bin, use fftData[0]
       result[i] = fftData[0];
     } else {
       result[i] = i < bins * HYBRID_LINEAR_DOWNSAMPLE_SPLIT ? sum / count : max;
