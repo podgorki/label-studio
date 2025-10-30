@@ -25,7 +25,7 @@ services:
     stdin_open: true
     tty: true
     build: .
-    image: heartexlabs/label-studio:latest
+    # image: heartexlabs/label-studio:latest
     restart: unless-stopped
     expose:
       - "8000"
