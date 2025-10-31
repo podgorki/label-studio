@@ -1,0 +1,102 @@
+# To run this playbook:
+#   $ ansible-playbook -i ansible-inventory.yaml ansible-playbook.yaml
+#
+# This'll connect to the EC2 instance via AWS SSM, so you'll need to have:
+# - AWS CLI configured with SSO access
+# - Session Manager plugin for the AWS CLI
+
+- name: Transfer file and Run script into SSM manage node
+  hosts: label_studio
+  gather_facts: true
+  connection: aws_ssm
+  become: true
+
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Install Docker
+      ansible.builtin.shell: |
+        sudo install -m 0755 -d /etc/apt/keyrings
+        sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+        sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+        # Add the repository to Apt sources:
+        echo \
+          "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+          $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+          sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt-get update
+        sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-compose -y
+        sudo systemctl start docker
+        sudo systemctl enable docker
+
+    - name: Run the hello-world container to verify installation
+      ansible.builtin.command:
+        argv:
+          - docker
+          - run
+          - --rm
+          - hello-world
+
+    - name: Pull Label Studio
+      ansible.builtin.git:
+        repo: "https://github.com/podgorki/label-studio.git"
+        version: "ultrasonic-settings"
+        dest: /home/ubuntu/label-studio
+        # Shallow clone to speed up
+        depth: 1
+
+    - name: Make the data directory writable to all
+      ansible.builtin.file:
+        path: "/home/ubuntu/label-studio/mydata"
+        state: directory
+        mode: "0777"
+
+    - name: Setup systemd service for Label Studio
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/label-studio.service
+        content: |
+          [Unit]
+          Description=Label Studio Service
+          After=network.target
+          Requires=docker.service
+
+          [Service]
+          WorkingDirectory=/home/ubuntu/label-studio
+          User=root
+          ExecStart=/usr/bin/docker-compose -f /home/ubuntu/label-studio/docker-compose.yml up
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: "0644"
+
+    - name: Enable and start Label Studio service
+      ansible.builtin.systemd:
+        name: label-studio.service
+        enabled: yes
+        state: started
+
+    # We want caddy to reverse proxy to label-studio which
+    # runs on port 8080 internally
+    - name: Install Caddy
+      ansible.builtin.apt:
+        name: caddy
+        state: present
+
+    - name: Setup Caddyfile for Label Studio
+      ansible.builtin.copy:
+        dest: /etc/caddy/Caddyfile
+        content: |
+          label-studio.supersensory.com.au {
+              reverse_proxy 0.0.0.0:8080
+          }
+        mode: "0644"
+
+    - name: Enable and start Caddy service
+      ansible.builtin.systemd:
+        name: caddy
+        enabled: yes
+        state: restarted
